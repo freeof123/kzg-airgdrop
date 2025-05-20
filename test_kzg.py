@@ -121,6 +121,15 @@ class TestHashToBLSField(unittest.TestCase):
         result = hash_to_bls_field(b"")
         self.assertTrue(0 <= int(result) < BLS_MODULUS)
 
+    def test_known_keccak_input(self):
+        input_data = b"\x01\x02\x03\x04"
+        keccak_hex = "a6885b3731702da62e8e4a8f584ac46a7f6822f4e2ba50fba902f67b1588d23b"
+        keccak_bytes = bytes.fromhex(keccak_hex)
+        expected = int.from_bytes(keccak_bytes, "big") % BLS_MODULUS
+
+        result = int(hash_to_bls_field(input_data))
+        self.assertEqual(result, expected)
+
 
 class TestBytesToBlsField(unittest.TestCase):
     def test_bytes_to_bls_field_valid(self):

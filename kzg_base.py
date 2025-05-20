@@ -1,4 +1,4 @@
-import hashlib, json
+import json
 from pathlib import Path
 from py_ecc.bls.g2_primitives import (
     pubkey_to_G1,
@@ -19,6 +19,8 @@ from py_ecc.optimized_bls12_381.optimized_curve import (
     FQ12,
 )
 from py_ecc.optimized_bls12_381.optimized_pairing import pairing
+from eth_utils import keccak
+
 
 # 导入 compress_G1 方法
 from hashlib import sha256
@@ -190,7 +192,7 @@ def hash_to_bls_field(data: bytes) -> BLSFieldElement:
     Hash ``data`` and convert the output to a BLS scalar field element.
     The output is not uniform over the BLS field.
     """
-    hashed_data = hashlib.sha256(data).digest()
+    hashed_data = keccak(data)
     return BLSFieldElement(int.from_bytes(hashed_data, ENDIANNESS) % BLS_MODULUS)
 
 
@@ -442,3 +444,39 @@ def pairing_check(pairs: list[tuple]) -> bool:
     for P, Q in pairs:
         result *= pairing(Q, P)  # 注意：py_ecc 接口是 pairing(Q, P)
     return result == FQ12.one()
+
+
+def fq_to_uint256_pair(fq) -> tuple[int, int]:
+    # 将 fq 元素（FQ(x)）转换为两个 uint256，高位在前
+    x_bytes = int(fq).to_bytes(64, "big")
+    hi = int.from_bytes(x_bytes[:32], "big")
+    lo = int.from_bytes(x_bytes[32:], "big")
+    return (hi, lo)
+
+
+if __name__ == "__main__":
+    pt = bls.bytes96_to_G2(KZG_SETUP_G2[1])  # 返回的是一个 tuple: (x, y, FQ2([1, 0]))
+    x, y, z = pt
+
+    print("x =", x)
+    print("x.real =", x.coeffs[0])
+    print("x.imag =", x.coeffs[1])
+    print("x type =", type(x))
+    print("x.real type =", type(x.coeffs[0]))
+    print("x.imag type =", type(x.coeffs[1]))
+
+    print("y =", y)
+    print("y.real =", y.coeffs[0])
+    print("y.imag =", y.coeffs[1])
+    print("y type =", type(y))
+    print("y.real type =", type(y.coeffs[0]))
+    print("y.imag type =", type(y.coeffs[1]))
+
+    print("x.real.a =", fq_to_uint256_pair(x.coeffs[0])[0])
+    print("x.real.b =", fq_to_uint256_pair(x.coeffs[0])[1])
+    print("x.imag.a =", fq_to_uint256_pair(x.coeffs[1])[0])
+    print("x.imag.b =", fq_to_uint256_pair(x.coeffs[1])[1])
+    print("y.real.a =", fq_to_uint256_pair(y.coeffs[0])[0])
+    print("y.real.b =", fq_to_uint256_pair(y.coeffs[0])[1])
+    print("y.imag.a =", fq_to_uint256_pair(y.coeffs[1])[0])
+    print("y.imag.b =", fq_to_uint256_pair(y.coeffs[1])[1])
