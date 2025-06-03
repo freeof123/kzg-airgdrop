@@ -64,6 +64,21 @@ contract KZGAirdrop is Ownable {
 
   event AirdropUpdated(B12.G1Point oldCommitment, B12.G1Point newCommitment);
 
+  function addUser(bytes calldata userInfo) external onlyOwner {
+    (address user, uint256 value, , uint256 x1, uint256 x2, uint256 y1, uint256 y2) = abi.decode(
+      userInfo,
+      (address, uint256, uint256, uint256, uint256, uint256, uint256)
+    );
+
+    uint256 y = uint256(keccak256(userInfo)) % BLS_MODULUS;
+
+    B12.G1Point memory lagrangeSetup = B12.G1Point(B12.Fp(x1, x2), B12.Fp(y1, y2));
+    B12.G1Point memory oldCommitment = commitment;
+    commitment = B12_381Lib.g1Add(commitment, B12_381Lib.g1Mul(lagrangeSetup, y));
+
+    emit UserBlobUpdated(oldCommitment, commitment, user, 0, value);
+  }
+
   function airdrop(B12.G1Point calldata airdropCommitment) external onlyOwner {
     B12.G1Point memory oldCommitment = commitment;
     commitment = B12_381Lib.g1Add(commitment, airdropCommitment);

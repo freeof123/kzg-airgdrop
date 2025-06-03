@@ -210,7 +210,7 @@ python3 blob_manager.py outputcommitment
 
 ## 链上交互说明
 
-本系统合约核心功能主要包括两个方法：
+本系统合约核心功能主要包括三个方法：
 
 ### 1. `updateUserBlob`
 
@@ -241,6 +241,29 @@ python3 blob_manager.py outputcommitment
 - **功能：** 由合约拥有者调用，将新的空投 commitment 累加到全局 commitment 上。
 - **参数：** `airdropCommitment` 为一个 `B12.G1Point`，代表本次空投的 commitment。
 - **逻辑：** 累加并触发 `AirdropUpdated` 事件。
+
+---
+
+### 3. `addUser`
+
+该方法由合约拥有者调用，用于将新用户添加到系统，并根据其 Lagrange Setup 与哈希标识更新全局 commitment。
+
+- **参数说明：**
+
+  - `userInfo`：编码后的用户数据，包含用户地址、余额、以及 Lagrange Setup 的坐标信息。
+
+- **核心逻辑：**
+
+  1. 使用 `abi.decode` 解码用户数据。
+  2. 对整个 `userInfo` 字节串执行 `keccak256` 哈希，并模 BLS 模数，得到当前用户对应的 blob value `y`，作为 commitment 加
+     权因子。
+  3. 构造 G1 点 `lagrangeSetup`。
+  4. 执行 G1 加法更新 commitment：  
+     `commitment = commitment + y ⋅ lagrangeSetup`。
+  5. 触发 `UserBlobUpdated` 事件，记录用户地址、旧 commitment、新 commitment、初始值。
+
+- **注意事项：**
+  - 该函数不验证 Lagrange Setup 的合法性，也不校验哈希 `y` 的来源，仅依赖于 `userInfo` 的一致性。
 
 ---
 
@@ -288,3 +311,5 @@ MIT License
 - [py_ecc](https://github.com/ethereum/py_ecc)：BLS12-381 实现库
 - [ethereum/EIPs](https://github.com/ethereum/EIPs/pull/6147)：BLS12-381 预编译提案
 - Foundry 工具链团队
+
+0xd201000000010001
