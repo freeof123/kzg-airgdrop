@@ -5,6 +5,7 @@ from py_ecc.bls.g2_primitives import (
     G1_to_pubkey,
     G2_to_signature,
     signature_to_G2,
+    subgroup_check,
 )
 from typing import Iterator, Sequence, TypeVar, Final, NewType
 from py_ecc.bls import G2ProofOfPossession as bls
@@ -442,6 +443,10 @@ def pairing_check(pairs: list[tuple]) -> bool:
     """
     result = FQ12.one()
     for P, Q in pairs:
+        if not subgroup_check(P):
+            raise ValueError("P not in r-order subgroup")
+        if not subgroup_check(Q):
+            raise ValueError("Q not in r-order subgroup")
         result *= pairing(Q, P)  # 注意：py_ecc 接口是 pairing(Q, P)
     return result == FQ12.one()
 

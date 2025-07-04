@@ -17,6 +17,55 @@
 │   └── BLSbase.t.sol         # G1/G2 相关基础测试
 ```
 
+---
+
+## 🗂️ 系统架构图
+
+本系统采用链下（Python 工具）与链上（Solidity 合约）协作的架构，数据流和组件关系如下：
+
+```mermaid
+flowchart TD
+    subgraph Off-chain[链下]
+        direction TB
+        A1["blob_manager.py\nCLI工具"]
+        A2["kzg_base.py\nKZG/BLS底层库"]
+        A3["blob_storage.json\n本地状态文件"]
+        A4["test_kzg.py\n单元测试"]
+    end
+
+    subgraph On-chain[链上]
+        direction TB
+        B1["KZGAirdrop.sol\n主合约"]
+        B2["B12.sol\nBLS12-381库"]
+        B3["EVM Pectra\nBLS12-381预编译"]
+    end
+
+    %% 链下流程
+    A1 -- 调用 --> A2
+    A1 -- 读写 --> A3
+    A4 -- 测试 --> A2
+
+    %% 链下链上交互
+    A1 -- 提交commitment/proof等数据 --> B1
+    B1 -- 事件/commitment变更 --> A1
+
+    %% 合约内部
+    B1 -- 调用 --> B2
+    B2 -- pairing等操作 --> B3
+
+    classDef offchain fill:#e0f7fa,stroke:#00796b,stroke-width:2px;
+    classDef onchain fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    class Off-chain offchain;
+    class On-chain onchain;
+```
+
+**说明：**
+- 链下部分负责用户管理、blob 状态更新、KZG 承诺/证明生成与本地存储。
+- 链上部分负责 commitment 管理、proof 验证、空投分发等。
+- 链下通过 CLI 工具生成数据并提交到链上，链上变更需手动同步回链下。
+
+---
+
 ## 🔧 安装依赖
 
 ### Python（链下部分）
@@ -311,5 +360,3 @@ MIT License
 - [py_ecc](https://github.com/ethereum/py_ecc)：BLS12-381 实现库
 - [ethereum/EIPs](https://github.com/ethereum/EIPs/pull/6147)：BLS12-381 预编译提案
 - Foundry 工具链团队
-
-0xd201000000010001
